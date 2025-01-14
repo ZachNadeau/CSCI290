@@ -1,138 +1,98 @@
-import java.util.Objects;
+import java.io.*;
+import java.util.*;
+import java.util.stream.Stream;
 
 /**
- * The Song class represents a single song with an artist, title, and lyrics.
- * Author: [Zach Nadeau]
+ * The SongCollection class represents a collection of songs loaded from a file.
+ * Author: [Your Name]
+ * Revised by: [Add Name and Date when making changes]
  */
-public class song implements Comparable<song> {
-    // Private fields
-    private final String artist;
-    private final String title;
-    private final String lyrics;
+public class SongCollection {
+    private Song[] songs; // Array to store songs
 
     /**
-     * Constructs a Song object with the specified artist, title, and lyrics.
+     * Constructor that reads a file of song data, builds an array of Songs, and sorts the array.
      * 
-     * @param artist The artist of the song.
-     * @param title  The title of the song.
-     * @param lyrics The lyrics of the song.
+     * @param fileName The name of the data file.
+     * @throws IllegalArgumentException If the file cannot be read or parsed.
+     * Author: [Your Name]
      */
-    public song(String artist, String title, String lyrics) {
-        this.artist = artist;
-        this.title = title;
-        this.lyrics = lyrics;
-    }
+    public SongCollection(String fileName) {
+        List<Song> songList = new ArrayList<>(); // Temporary list to hold songs
+        try (BufferedReader reader = new BufferedReader(new FileReader(fileName))) {
+            String line;
+            String artist = null, title = null, lyrics = null;
+            StringBuilder lyricsBuilder = new StringBuilder();
 
-    /**
-     * Returns the artist of the song.
-     * 
-     * @return The artist of the song.
-     */
-    public String getArtist() {
-        return artist;
-    }
+            while ((line = reader.readLine()) != null) {
+                if (line.startsWith("ARTIST=")) {
+                    if (artist != null && title != null && lyricsBuilder.length() > 0) {
+                        // Add the previous song
+                        lyrics = lyricsBuilder.toString().trim();
+                        songList.add(new Song(artist, title, lyrics));
+                    }
+                    // Reset for the next song
+                    artist = line.substring(7).trim();
+                    title = null;
+                    lyricsBuilder.setLength(0);
+                } else if (line.startsWith("TITLE=")) {
+                    title = line.substring(6).trim();
+                } else {
+                    lyricsBuilder.append(line).append("\n");
+                }
+            }
 
-    /**
-     * Returns the title of the song.
-     * 
-     * @return The title of the song.
-     */
-    public String getTitle() {
-        return title;
-    }
+            // Add the last song in the file
+            if (artist != null && title != null && lyricsBuilder.length() > 0) {
+                lyrics = lyricsBuilder.toString().trim();
+                songList.add(new Song(artist, title, lyrics));
+            }
 
-    /**
-     * Returns the lyrics of the song.
-     * 
-     * @return The lyrics of the song.
-     */
-    public String getLyrics() {
-        return lyrics;
-    }
+            // Convert the list to an array and sort it
+            songs = songList.toArray(new Song[0]);
+            Arrays.sort(songs);
 
-    /**
-     * Returns a string representation of the song in the format:
-     * ARTIST, "TITLE".
-     * 
-     * @return A string representation of the song.
-     */
-    @Override
-    public String toString() {
-        return artist + ", \"" + title + "\"";
-    }
-
-    /**
-     * Compares this song to another song alphabetically by artist and then by
-     * title. The comparison is case-insensitive.
-     * 
-     * @param other The other song to compare to.
-     * @return A negative integer, zero, or a positive integer if this song is
-     *         less than, equal to, or greater than the specified song.
-     */
-    @Override
-    public int compareTo(song other) {
-        int artistComparison = this.artist.compareToIgnoreCase(other.artist);
-        if (artistComparison != 0) {
-            return artistComparison;
+        } catch (IOException e) {
+            throw new IllegalArgumentException("Error reading file: " + e.getMessage(), e);
         }
-        return this.title.compareToIgnoreCase(other.title);
     }
 
     /**
-     * Overrides equals to compare songs based on artist, title, and lyrics.
+     * Returns the sorted array of songs.
      * 
-     * @param o The object to compare.
-     * @return true if the songs are identical; false otherwise.
+     * @return The array of songs.
+     * Author: [Your Name]
      */
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        song song = (song) o;
-        return artist.equalsIgnoreCase(song.artist) &&
-               title.equalsIgnoreCase(song.title) &&
-               lyrics.equals(song.lyrics);
+    public Song[] getAllSongs() {
+        return songs;
     }
 
     /**
-     * Generates a hash code for the song based on artist, title, and lyrics.
-     * 
-     * @return The hash code.
-     */
-    @Override
-    public int hashCode() {
-        return Objects.hash(artist.toLowerCase(), title.toLowerCase(), lyrics);
-    }
-
-    /**
-     * Unit Testing for the Song class.
-     * This method tests all public methods of the Song class.
+     * Unit Testing for the SongCollection class.
+     * Author: [Your Name]
      */
     public static void main(String[] args) {
-        // Test data
-        song song1 = new song("Artist One", "Title One", "Lyrics of the first song");
-        song song2 = new song("Artist Two", "Title Two", "Lyrics of the second song");
-        song song3 = new song("Artist One", "Title Two", "Lyrics of the third song");
+        if (args.length != 1) {
+            System.out.println("Usage: java SongCollection <file_name>");
+            return;
+        }
 
-        // Testing getters
-        System.out.println("Artist: " + song1.getArtist()); // Expected: Artist One
-        System.out.println("Title: " + song1.getTitle()); // Expected: Title One
-        System.out.println("Lyrics: " + song1.getLyrics()); // Expected: Lyrics of the first song
+        try {
+            // Create an instance of SongCollection with the given file name
+            SongCollection collection = new SongCollection(args[0]);
 
-        // Testing toString
-        System.out.println("String Representation: " + song1); // Expected: Artist One, "Title One"
+            // Get the array of songs
+            Song[] list = collection.getAllSongs();
 
-        // Testing compareTo
-        System.out.println("Compare song1 and song2: " + song1.compareTo(song2)); // Expected: < 0
-        System.out.println("Compare song1 and song3: " + song1.compareTo(song3)); // Expected: < 0
+            // Print the total number of songs
+            System.out.println("Total number of songs: " + list.length);
 
-        // Testing equals
-        song song4 = new song("Artist One", "Title One", "Lyrics of the first song");
-        System.out.println("song1 equals song4: " + song1.equals(song4)); // Expected: true
-        System.out.println("song1 equals song2: " + song1.equals(song2)); // Expected: false
+            // Print the artist and title of the first 10 songs or fewer
+            System.out.println("First 10 songs (or fewer):");
+            Stream.of(list).limit(10).forEach(System.out::println);
 
-        // Testing hashCode
-        System.out.println("song1 hashCode: " + song1.hashCode()); // Expected: consistent hash
-        System.out.println("song4 hashCode: " + song4.hashCode()); // Expected: same as song1
+        } catch (IllegalArgumentException e) {
+            System.out.println("Error: " + e.getMessage());
+        }
     }
 }
